@@ -872,9 +872,7 @@ struct
         case args of
           {mode = SOME Help, ...} =>
           printHelp {progname = progname, developerMode = #developerMode args}
-        | {mode = NONE, srcfiles = nil, verbose = true, ...} =>
-          printVersion options
-        | {mode = NONE, srcfiles = nil, verbose = false, ...} =>
+        | {mode = NONE, srcfiles = nil, ...} =>
           (printVersion options;
            interactive options)
         | {require = _::_, ...} =>
