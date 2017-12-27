@@ -98,13 +98,17 @@ struct
       SyntaxOnly
     | TypeCheckOnly
 
+  datatype info_mode =
+      Help
+    | Version
+
   datatype compiler_mode =
       Compile of compile_mode
     | Check of check_mode
     | MakeDependCompile of InterfaceName.file_place
     | MakeDependLink of InterfaceName.file_place
     | MakeMakefile
-    | Help
+    | Info of info_mode
 
   datatype command_line_args =
       OutputFile of string
@@ -181,7 +185,8 @@ struct
           SLONG ("filemap", REQUIRED FileMap),
           SLONG ("nostdpath", NOARG NoStdPath),
           SLONG ("nostdlib", NOARG NoStdLib),
-          DLONG ("help", NOARG (Mode Help)),
+          DLONG ("help", NOARG (Mode (Info Help))),
+          DLONG ("version", NOARG (Mode (Info Version))),
           SHORT (#"d", OPTIONAL ControlSwitch)
         ]
       end
@@ -197,12 +202,14 @@ struct
       | MakeDependLink I.STDPATH => "-Ml"
       | MakeDependLink I.LOCALPATH => "-MMl"
       | MakeMakefile => "-Mm"
-      | Help => "--help"
+      | Info Help => "--help"
+      | Info Version => "--version"
 
   fun usageMessage progname =
       "Usage: " ^ progname ^ " [options] file ...\n\
       \Options:\n\
       \  --help             print this message\n\
+      \  --version          print compiler version\n\
       \  -v                 verbose mode\n\
       \  -o <file>          place the output to <file>\n\
       \  -c                 compile and assemble; do not link\n\
@@ -782,8 +789,10 @@ struct
               args # {developerMode = true}
             | Verbose =>
               args # {verbose = true}
-            | Mode Help =>
-              args # {mode = SOME Help}
+            | Mode (Info Help) =>
+              args # {mode = SOME (Info Help)}
+            | Mode (Info Version) =>
+              args # {mode = SOME (Info Version)}
             | Mode newMode =>
               case #mode args of
                 NONE => args # {mode = SOME newMode}
@@ -823,7 +832,7 @@ struct
             | SOME (MakeDependCompile _) => Top.SyntaxCheck
             | SOME (MakeDependLink _) => Top.SyntaxCheck
             | SOME MakeMakefile => Top.SyntaxCheck
-            | SOME Help => Top.SyntaxCheck
+            | SOME (Info _) => Top.SyntaxCheck
             | NONE => Top.NoStop
         val loadMode =
             case #mode args of
@@ -832,7 +841,7 @@ struct
             | SOME (MakeDependCompile _) => Top.COMPILE
             | SOME (MakeDependLink _) => Top.COMPILE_AND_LINK
             | SOME MakeMakefile => Top.ALL
-            | SOME Help => Top.COMPILE
+            | SOME (Info _) => Top.COMPILE
             | NONE => Top.COMPILE_AND_LINK
 
         val options =
@@ -870,8 +879,10 @@ struct
           | defaultTarget (CompileOnly, false) = toObjFile
       in
         case args of
-          {mode = SOME Help, ...} =>
+          {mode = SOME (Info Help), ...} =>
           printHelp {progname = progname, developerMode = #developerMode args}
+        | {mode = SOME (Info Version), ...} =>
+          printVersion options
         | {mode = NONE, srcfiles = nil, ...} =>
           (printVersion options;
            interactive options)
