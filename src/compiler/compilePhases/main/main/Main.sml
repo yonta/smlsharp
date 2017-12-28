@@ -127,7 +127,7 @@ struct
     | LinkerFlags of string list
     | LLCFlags of string list
     | OPTFlags of string list
-    | ControlSwitch of string option
+    | ControlSwitch of string
     | NoStdPath
     | NoStdLib
     | Verbose
@@ -187,7 +187,7 @@ struct
           SLONG ("nostdlib", NOARG NoStdLib),
           DLONG ("help", NOARG (Mode (Info Help))),
           DLONG ("version", NOARG (Mode (Info Version))),
-          SHORT (#"d", OPTIONAL ControlSwitch)
+          SHORT (#"d", REQUIRED ControlSwitch)
         ]
       end
 
@@ -244,7 +244,7 @@ struct
       \  -Xopt <arg>        pass <arg> to opt command\n\
       \  -nostdpath         no standard file search path is used\n\
       \  -d <key>=<value>   set extra option for compiler developers\n\
-      \  -d                 print list of extra options\n"
+      \                     print list of extra options using by --help -v\n"
 
   fun extraOptionUsageMessage () =
       "\n\
@@ -261,11 +261,11 @@ struct
                  desc ^ "\n")
              Control.switchTable)
 
-  fun printHelp {progname, developerMode} =
+  fun printHelp progname verbose =
       (
         #start Counter.printHelpTimeCounter();
         print (usageMessage progname);
-        if developerMode then print (extraOptionUsageMessage ()) else ();
+        if verbose then print (extraOptionUsageMessage ()) else ();
         #stop Counter.printHelpTimeCounter()
       )
 
@@ -729,7 +729,6 @@ struct
               srcfiles = nil,
               verbose = false,
               mode = NONE,
-              developerMode = false,
               extraOptions = nil,
               fileMap = NONE,
               require = nil,
@@ -783,10 +782,8 @@ struct
               args # {fileMap = SOME (Filename.fromString file)}
             | Require file =>
               args # {require = #require args @ [Filename.fromString file]}
-            | ControlSwitch (SOME pair) =>
+            | ControlSwitch pair =>
               args # {extraOptions = #extraOptions args @ [pair]}
-            | ControlSwitch NONE =>
-              args # {developerMode = true}
             | Verbose =>
               args # {verbose = true}
             | Mode (Info Help) =>
@@ -812,8 +809,7 @@ struct
         (* Set global control options according to args.
          * The order of extra options is siginificant; if the same option
          * is set twice or more, the latter one overwrites the former one. *)
-        val _ = Control.printCommand
-                  := (#verbose args orelse #developerMode args)
+        val _ = Control.printCommand := #verbose args
         val _ = app setExtraOption (#extraOptions args)
 
         (* Now we have done the global configuration of the compiler.
@@ -879,8 +875,8 @@ struct
           | defaultTarget (CompileOnly, false) = toObjFile
       in
         case args of
-          {mode = SOME (Info Help), ...} =>
-          printHelp {progname = progname, developerMode = #developerMode args}
+          {mode = SOME (Info Help), verbose, ...} =>
+          printHelp progname verbose
         | {mode = SOME (Info Version), ...} =>
           printVersion options
         | {mode = NONE, srcfiles = nil, ...} =>
