@@ -244,7 +244,7 @@ struct
       \  -Xopt <arg>        pass <arg> to opt command\n\
       \  -nostdpath         no standard file search path is used\n\
       \  -d <key>=<value>   set extra option for compiler developers\n\
-      \  -d                 print list of extra options\n"
+      \  --help -d          print list of extra options\n"
 
   fun extraOptionUsageMessage () =
       "\n\
