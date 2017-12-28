@@ -812,8 +812,7 @@ struct
         (* Set global control options according to args.
          * The order of extra options is siginificant; if the same option
          * is set twice or more, the latter one overwrites the former one. *)
-        val _ = Control.printCommand
-                  := (#verbose args orelse #developerMode args)
+        val _ = Control.printCommand := #verbose args
         val _ = app setExtraOption (#extraOptions args)
 
         (* Now we have done the global configuration of the compiler.
